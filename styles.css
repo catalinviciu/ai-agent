@@ -748,6 +748,26 @@ body {
     display: block;
 }
 
+/* Welcome Message */
+.welcome-message {
+    margin-bottom: 24px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.welcome-message h3 {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--vz-charcoal-gray);
+    margin-bottom: 8px;
+}
+
+.welcome-message p {
+    font-size: 14px;
+    color: var(--vz-gray);
+    line-height: 1.5;
+}
+
 /* Action Cards */
 .action-cards {
     display: flex;
@@ -1241,6 +1261,76 @@ body {
 .analyzing-container p {
     font-size: 14px;
     color: var(--vz-gray);
+}
+
+/* Publishing Animation */
+.publishing-container {
+    text-align: center;
+    padding: 60px 20px;
+}
+
+.publishing-container h3 {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--vz-charcoal-gray);
+    margin-bottom: 8px;
+}
+
+.publishing-container p {
+    font-size: 14px;
+    color: var(--vz-gray);
+}
+
+/* Success State */
+.success-container {
+    text-align: center;
+    padding: 60px 40px;
+}
+
+.success-icon {
+    margin: 0 auto 24px;
+    display: flex;
+    justify-content: center;
+}
+
+.success-container h2 {
+    font-size: 28px;
+    font-weight: 600;
+    color: var(--vz-charcoal-gray);
+    margin-bottom: 12px;
+}
+
+.success-container p {
+    font-size: 16px;
+    color: var(--vz-gray);
+    margin-bottom: 32px;
+}
+
+.success-stats {
+    display: flex;
+    justify-content: center;
+    gap: 48px;
+    margin-top: 32px;
+}
+
+.success-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.success-stat strong {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--vz-gray);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.success-stat span {
+    font-size: 18px;
+    font-weight: 600;
+    color: #28a745;
 }
 
 /* Mobile Preview Styles */

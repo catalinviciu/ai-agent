@@ -10,6 +10,7 @@ A sophisticated AI consultant that interviews the fleet manager to dynamically b
 	* Activity 1: Engage with the agent to setup DVIR:
 		* Task: Land on Inspection History Page
 		* Task: Click on button Setup DVIR with Reveal Intelligence
+		* Task: When the user engages with the AI agent the ai agent will present itself and mention the tasks below that he can do on user's behalf   
     * **Activity 2 : Build the right inspection form**
         *   *Task:* Choose how to create the Inspection form:
 	        * Build with AI
@@ -28,6 +29,7 @@ A sophisticated AI consultant that interviews the fleet manager to dynamically b
 		        * Submit all inspection items
 	        * Depending on layout selected the user will see the mobile preview in the correct layout
         * Task: Manual inspection form edit. If the user wants to change the form he can click on edit form. (mocked for now)  
+        * Task: Publish inspection form and return to the Activity selection. When the user confirms the template is ok the agent will show that it's publishing the template and return to the initial 
     *   **Activity: Get all my drivers ready for mobile inspections**
         *   *Tasks:* Review AI-audited list of drivers showing their readiness status -> Click to edit drivers flagged as "Needs Attention" -> Add missing email addresses -> Enable mobile access via a toggle -> Assign drivers to one or more vehicle groups -> Save changes -> Add new drivers if needed.
     *   **Activity: Roll out training and monitor activation**

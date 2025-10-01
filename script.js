@@ -303,14 +303,18 @@ function populateWelcomeActions() {
     if (!actionInterface) return;
 
     actionInterface.innerHTML = `
+        <div class="welcome-message">
+            <h3>Hi! I'm your Reveal Intelligence assistant.</h3>
+            <p>I can help you set up your DVIR system quickly and correctly. Here's what I can do for you:</p>
+        </div>
         <div class="action-cards">
             <button class="action-card primary" onclick="startDVIRSetup()">
                 <div class="card-icon">
                     <i class="material-icons">description</i>
                 </div>
                 <div class="card-content">
-                    <div class="card-title">Create your first form</div>
-                    <div class="card-subtitle">With my help or from your template</div>
+                    <div class="card-title">Create an inspection form</div>
+                    <div class="card-subtitle">Choose what drivers will see</div>
                 </div>
                 <div class="card-pointer">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -677,8 +681,6 @@ const inspectionCategories = {
 function generateInspectionForm() {
     agentState.updateWorkflowProgress(2, 4, 'Generating inspection form');
 
-    agentState.addMessage("Perfect! I have all the information I need. I'm now generating your custom inspection form...", false);
-
     // Show loading state
     setTimeout(() => {
         agentState.updateWorkflowProgress(3, 4, 'Form ready for review');
@@ -844,6 +846,77 @@ function switchLayout(newLayout) {
 
     const categories = agentState.formData.categories;
     showMobilePreview(categories, newLayout);
+}
+
+// Approve and publish the inspection form
+function approveForm() {
+    agentState.updateWorkflowProgress(4, 4, 'Publishing inspection form');
+
+    agentState.addMessage("Perfect! I'm publishing your inspection form now...", false);
+
+    // Show publishing animation in canvas
+    const publishingHTML = `
+        <div class="publishing-container">
+            <div class="spinner"></div>
+            <h3>Publishing inspection form</h3>
+            <p>Making it available to your drivers...</p>
+        </div>
+    `;
+
+    agentState.updateOutputContent(publishingHTML);
+
+    // Simulate publishing process
+    setTimeout(() => {
+        agentState.addMessage("Success! Your inspection form has been published and is now active. Drivers can start using it immediately.", false);
+
+        // Show success state in canvas
+        const successHTML = `
+            <div class="success-container">
+                <div class="success-icon">
+                    <svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="10" fill="#28a745"/>
+                        <path d="M9 12l2 2 4-4" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <h2>Inspection Form Published!</h2>
+                <p>Your drivers can now use this form on their mobile devices.</p>
+                <div class="success-stats">
+                    <div class="success-stat">
+                        <strong>Form Status</strong>
+                        <span>Active</span>
+                    </div>
+                    <div class="success-stat">
+                        <strong>Available To</strong>
+                        <span>All Drivers</span>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        agentState.updateOutputContent(successHTML);
+
+        // Return to activity selection after short delay
+        setTimeout(() => {
+            agentState.addMessage("What would you like to do next?", false);
+            returnToActivitySelection();
+        }, 2000);
+    }, 2500);
+}
+
+// Return to initial activity selection
+function returnToActivitySelection() {
+    agentState.updateWorkflowProgress(0, 0, '');
+    agentState.hideOutput();
+    showActionInterface();
+    populateWelcomeActions();
+}
+
+// Edit the inspection form (mocked for now)
+function editForm() {
+    agentState.addMessage("Form editing is coming soon! For now, you can approve the form or start over by selecting a different creation method.", false, [
+        { text: "Approve this form", onclick: "approveForm()" },
+        { text: "Start over", onclick: "startDVIRSetup()" }
+    ]);
 }
 
 function analyzeCurrent() {
