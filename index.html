@@ -201,6 +201,53 @@
 
     </div>
 
+    <!-- Edit Driver Modal -->
+    <div id="edit-driver-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="driver-info-modal">
+                    <div class="driver-avatar-modal" id="edit-driver-avatar">MS</div>
+                    <div>
+                        <h3 id="edit-driver-name">Driver Name</h3>
+                        <p id="edit-driver-id">Driver #ID</p>
+                    </div>
+                </div>
+                <button class="modal-close" onclick="closeEditModal()">
+                    <i class="material-icons">close</i>
+                </button>
+            </div>
+
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="edit-email">Email Address</label>
+                    <input type="email" id="edit-email" class="form-input" placeholder="driver@company.com">
+                </div>
+
+                <div class="form-group">
+                    <label class="toggle-label">
+                        <span>Mobile Access</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="edit-mobile-access">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </label>
+                </div>
+
+                <div class="form-group">
+                    <label>Vehicle Groups</label>
+                    <div id="edit-vehicle-groups" class="checkbox-group">
+                        <!-- Checkboxes will be dynamically added here -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="saveDriverEdits()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
     <script src="script.js"></script>
 </body>
 </html>

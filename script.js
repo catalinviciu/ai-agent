@@ -9,6 +9,10 @@ class AgentState {
         this.conversationHistory = [];
         this.outputVisible = false;
         this.isMobile = window.innerWidth <= 768;
+        this.drivers = []; // Store driver data for Activity 3
+        this.currentPage = 1; // Pagination state
+        this.pageSize = 10; // Drivers per page
+        this.searchQuery = ''; // Search filter
 
         // Bind methods
         this.init = this.init.bind(this);
@@ -122,12 +126,13 @@ class AgentState {
         }
     }
 
-    addMessage(content, isUser = false, actions = null) {
+    addMessage(content, isUser = false, actions = null, showFeedback = false) {
         const message = {
             id: Date.now(),
             content,
             isUser,
             actions,
+            showFeedback,
             timestamp: new Date()
         };
 
@@ -137,6 +142,11 @@ class AgentState {
         if (!isUser) {
             this.announceToScreenReader(`AI says: ${content}`);
         }
+    }
+
+    resetConversation() {
+        this.conversationHistory = [];
+        this.renderConversation();
     }
 
     renderConversation() {
@@ -159,6 +169,20 @@ class AgentState {
                     ${message.actions && !message.isUser ? `
                         <div class="message-actions">
                             ${this.renderConversationActions(message.actions)}
+                        </div>
+                    ` : ''}
+                    ${message.showFeedback && !message.isUser ? `
+                        <div class="canvas-secondary-buttons" style="margin-top: 12px;">
+                            <button class="secondary-btn" onclick="provideFeedback('positive')" title="Helpful">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M7 22V11M2 13v6a2 2 0 002 2h3m0 0h8a2 2 0 002-2v-7.5a2 2 0 00-2-2h-2.5m-3.5 0l3-5.5V3a1 1 0 011-1h1a1 1 0 011 1v3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </button>
+                            <button class="secondary-btn" onclick="provideFeedback('negative')" title="Not helpful">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M7 2v11m-5-2v-6a2 2 0 012-2h3m0 0h8a2 2 0 012 2v7.5a2 2 0 01-2 2h-2.5m-3.5 0l3 5.5V21a1 1 0 01-1 1h-1a1 1 0 01-1-1v-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </button>
                         </div>
                     ` : ''}
                 </div>
@@ -406,6 +430,9 @@ function hideTextInput() {
 
 // Workflow Functions
 function startDVIRSetup() {
+    // Reset conversation history for new activity
+    agentState.resetConversation();
+
     agentState.currentWorkflow = 'dvir-setup';
     agentState.updateWorkflowProgress(1, 4, 'Building inspection form');
 
@@ -677,6 +704,427 @@ const inspectionCategories = {
     ]
 };
 
+// Mock Driver Data
+const mockDrivers = [
+    // Can be fixed with AI (10 drivers) - have email and groups, just need mobile access enabled
+    {
+        id: "D002",
+        name: "Mike Smith",
+        driverId: "#002",
+        email: "mike.smith@company.com",
+        mobileAccess: false,
+        vehicleGroups: ["Fleet A"],
+        status: "ai-fix"
+    },
+    {
+        id: "D004",
+        name: "Tom Carter",
+        driverId: "#004",
+        email: "tom.carter@company.com",
+        mobileAccess: false,
+        vehicleGroups: ["Fleet B"],
+        status: "ai-fix"
+    },
+    {
+        id: "D005",
+        name: "Lisa Martin",
+        driverId: "#005",
+        email: "lisa.martin@company.com",
+        mobileAccess: false,
+        vehicleGroups: ["Fleet A"],
+        status: "ai-fix"
+    },
+    {
+        id: "D009",
+        name: "Maria Rodriguez",
+        driverId: "#009",
+        email: "maria.rodriguez@company.com",
+        mobileAccess: false,
+        vehicleGroups: ["Fleet A"],
+        status: "ai-fix"
+    },
+    {
+        id: "D011",
+        name: "Robert Wilson",
+        driverId: "#011",
+        email: "robert.wilson@company.com",
+        mobileAccess: false,
+        vehicleGroups: ["Fleet B"],
+        status: "ai-fix"
+    },
+    {
+        id: "D013",
+        name: "Patricia Garcia",
+        driverId: "#013",
+        email: "patricia.garcia@company.com",
+        mobileAccess: false,
+        vehicleGroups: ["Fleet A", "Fleet B"],
+        status: "ai-fix"
+    },
+    {
+        id: "D016",
+        name: "David Anderson",
+        driverId: "#016",
+        email: "david.anderson@company.com",
+        mobileAccess: false,
+        vehicleGroups: ["Fleet C"],
+        status: "ai-fix"
+    },
+    {
+        id: "D018",
+        name: "Jennifer Taylor",
+        driverId: "#018",
+        email: "jennifer.taylor@company.com",
+        mobileAccess: false,
+        vehicleGroups: ["Fleet A"],
+        status: "ai-fix"
+    },
+    {
+        id: "D021",
+        name: "Christopher Moore",
+        driverId: "#021",
+        email: "christopher.moore@company.com",
+        mobileAccess: false,
+        vehicleGroups: ["Fleet B"],
+        status: "ai-fix"
+    },
+    {
+        id: "D024",
+        name: "Amanda White",
+        driverId: "#024",
+        email: "amanda.white@company.com",
+        mobileAccess: false,
+        vehicleGroups: ["Fleet C"],
+        status: "ai-fix"
+    },
+
+    // Needs manual fix (8 drivers) - various issues requiring manual intervention
+    {
+        id: "D003",
+        name: "Sarah Johnson",
+        driverId: "#003",
+        email: "",
+        emailError: "No email provided",
+        mobileAccess: false,
+        vehicleGroups: [],
+        groupsError: "No groups assigned",
+        status: "manual-fix"
+    },
+    {
+        id: "D007",
+        name: "Alex Davis",
+        driverId: "#007",
+        email: "invalid-email",
+        emailError: "Invalid email format",
+        mobileAccess: false,
+        vehicleGroups: ["Fleet A"],
+        status: "manual-fix"
+    },
+    {
+        id: "D008",
+        name: "Karen Lee",
+        driverId: "#008",
+        email: "karen.lee@company.com",
+        mobileAccess: false,
+        accountLocked: true,
+        vehicleGroups: [],
+        groupsError: "No groups assigned",
+        status: "manual-fix"
+    },
+    {
+        id: "D012",
+        name: "Daniel Thompson",
+        driverId: "#012",
+        email: "",
+        emailError: "No email provided",
+        mobileAccess: false,
+        vehicleGroups: ["Fleet B"],
+        status: "manual-fix"
+    },
+    {
+        id: "D015",
+        name: "Michelle Harris",
+        driverId: "#015",
+        email: "michelle@invalid",
+        emailError: "Invalid email format",
+        mobileAccess: false,
+        vehicleGroups: [],
+        groupsError: "No groups assigned",
+        status: "manual-fix"
+    },
+    {
+        id: "D019",
+        name: "Brian Clark",
+        driverId: "#019",
+        email: "",
+        emailError: "No email provided",
+        mobileAccess: false,
+        vehicleGroups: ["Fleet C"],
+        status: "manual-fix"
+    },
+    {
+        id: "D022",
+        name: "Laura Martinez",
+        driverId: "#022",
+        email: "laura.martinez@company.com",
+        mobileAccess: false,
+        vehicleGroups: [],
+        groupsError: "No groups assigned",
+        status: "manual-fix"
+    },
+    {
+        id: "D025",
+        name: "Kevin Young",
+        driverId: "#025",
+        email: "notanemail",
+        emailError: "Invalid email format",
+        mobileAccess: false,
+        vehicleGroups: ["Fleet A"],
+        status: "manual-fix"
+    },
+
+    // Ready to go (7 drivers) - all set up correctly
+    {
+        id: "D001",
+        name: "John Doe",
+        driverId: "#001",
+        email: "john.doe@company.com",
+        mobileAccess: true,
+        vehicleGroups: ["Fleet A", "Fleet B"],
+        status: "ready"
+    },
+    {
+        id: "D006",
+        name: "James Brown",
+        driverId: "#006",
+        email: "james.brown@company.com",
+        mobileAccess: true,
+        vehicleGroups: ["Fleet B"],
+        status: "ready"
+    },
+    {
+        id: "D010",
+        name: "Elizabeth King",
+        driverId: "#010",
+        email: "elizabeth.king@company.com",
+        mobileAccess: true,
+        vehicleGroups: ["Fleet A"],
+        status: "ready"
+    },
+    {
+        id: "D014",
+        name: "William Scott",
+        driverId: "#014",
+        email: "william.scott@company.com",
+        mobileAccess: true,
+        vehicleGroups: ["Fleet C"],
+        status: "ready"
+    },
+    {
+        id: "D017",
+        name: "Nancy Lewis",
+        driverId: "#017",
+        email: "nancy.lewis@company.com",
+        mobileAccess: true,
+        vehicleGroups: ["Fleet A", "Fleet B"],
+        status: "ready"
+    },
+    {
+        id: "D020",
+        name: "Matthew Hall",
+        driverId: "#020",
+        email: "matthew.hall@company.com",
+        mobileAccess: true,
+        vehicleGroups: ["Fleet B"],
+        status: "ready"
+    },
+    {
+        id: "D023",
+        name: "Betty Allen",
+        driverId: "#023",
+        email: "betty.allen@company.com",
+        mobileAccess: true,
+        vehicleGroups: ["Fleet C"],
+        status: "ready"
+    }
+];
+
+// Helper function to get avatar initials from name
+function getInitials(name) {
+    return name.split(' ').map(n => n[0]).join('').toUpperCase();
+}
+
+// Helper function to render driver table
+function renderDriverTable(drivers) {
+    // Filter drivers based on search query
+    const searchQuery = agentState.searchQuery.toLowerCase();
+    let filteredDrivers = drivers;
+
+    if (searchQuery) {
+        filteredDrivers = drivers.filter(driver => {
+            return driver.name.toLowerCase().includes(searchQuery) ||
+                   driver.email.toLowerCase().includes(searchQuery) ||
+                   driver.driverId.toLowerCase().includes(searchQuery);
+        });
+    }
+
+    // Sort drivers by priority: ai-fix -> manual-fix -> ready
+    const sortOrder = { 'ai-fix': 1, 'manual-fix': 2, 'ready': 3 };
+    const sortedDrivers = [...filteredDrivers].sort((a, b) => sortOrder[a.status] - sortOrder[b.status]);
+
+    // Pagination calculations
+    const totalDrivers = sortedDrivers.length;
+    const totalPages = Math.ceil(totalDrivers / agentState.pageSize);
+    const startIndex = (agentState.currentPage - 1) * agentState.pageSize;
+    const endIndex = startIndex + agentState.pageSize;
+    const paginatedDrivers = sortedDrivers.slice(startIndex, endIndex);
+
+    const driverRows = paginatedDrivers.map(driver => {
+        // Determine email display
+        let emailDisplay = driver.email || driver.emailError;
+        let emailClass = driver.emailError ? 'error' : '';
+
+        // Determine mobile access display
+        let mobileAccessIcon = '';
+        let mobileAccessText = '';
+        let mobileAccessClass = '';
+
+        if (driver.accountLocked) {
+            mobileAccessIcon = '✕';
+            mobileAccessText = 'Account locked';
+            mobileAccessClass = 'disabled';
+        } else if (driver.mobileAccess) {
+            mobileAccessIcon = '✓';
+            mobileAccessText = 'Enabled';
+            mobileAccessClass = 'enabled';
+        } else if (driver.status === 'ai-fix') {
+            mobileAccessIcon = '✓';
+            mobileAccessText = 'Can enable';
+            mobileAccessClass = 'can-enable';
+        } else {
+            mobileAccessIcon = '✕';
+            mobileAccessText = 'Disabled';
+            mobileAccessClass = 'disabled';
+        }
+
+        // Determine vehicle groups display
+        let groupsDisplay = driver.vehicleGroups && driver.vehicleGroups.length > 0
+            ? driver.vehicleGroups.join(', ')
+            : driver.groupsError || 'No groups assigned';
+        let groupsClass = driver.groupsError ? 'error' : '';
+
+        // Determine status badge
+        let statusBadge = '';
+        let statusIcon = '';
+        if (driver.status === 'ready') {
+            statusBadge = 'Ready';
+            statusIcon = '✓';
+        } else if (driver.status === 'ai-fix') {
+            statusBadge = 'AI can fix';
+            statusIcon = '📱';
+        } else {
+            statusBadge = 'Manual fix needed';
+            statusIcon = '⚠️';
+        }
+
+        // Determine action button
+        let actionButton = '';
+        if (driver.status === 'ai-fix') {
+            actionButton = '<button class="action-btn ai-fix" onclick="quickFixDriver(\'' + driver.id + '\')">AI Quick Fix</button>';
+        } else if (driver.status === 'manual-fix') {
+            actionButton = '<button class="action-btn edit" onclick="editDriver(\'' + driver.id + '\')">Edit Driver</button>';
+        } else {
+            actionButton = '<button class="action-btn edit" onclick="editDriver(\'' + driver.id + '\')">Edit</button>';
+        }
+
+        return `
+            <tr class="driver-row status-${driver.status}">
+                <td class="driver-cell">
+                    <div class="driver-info">
+                        <div class="driver-avatar">${getInitials(driver.name)}</div>
+                        <div class="driver-details">
+                            <div class="driver-name">${driver.name}</div>
+                            <div class="driver-id">Driver ${driver.driverId}</div>
+                        </div>
+                    </div>
+                </td>
+                <td class="email-cell ${emailClass}">${emailDisplay}</td>
+                <td class="mobile-access-cell ${mobileAccessClass}">
+                    <span class="mobile-icon">${mobileAccessIcon}</span> ${mobileAccessText}
+                </td>
+                <td class="groups-cell ${groupsClass}">${groupsDisplay}</td>
+                <td class="status-cell">
+                    <div class="status-badge ${driver.status}">
+                        <span class="status-icon">${statusIcon}</span> ${statusBadge}
+                    </div>
+                </td>
+                <td class="actions-cell">
+                    ${actionButton}
+                </td>
+            </tr>
+        `;
+    }).join('');
+
+    // Generate pagination controls
+    let paginationHTML = '';
+    if (totalPages > 1) {
+        let pageButtons = '';
+
+        // Previous button
+        const prevDisabled = agentState.currentPage === 1 ? 'disabled' : '';
+        pageButtons += `<button class="page-btn ${prevDisabled}" onclick="changePage(${agentState.currentPage - 1})" ${prevDisabled ? 'disabled' : ''}>Previous</button>`;
+
+        // Page numbers
+        for (let i = 1; i <= totalPages; i++) {
+            const activeClass = i === agentState.currentPage ? 'active' : '';
+            pageButtons += `<button class="page-btn ${activeClass}" onclick="changePage(${i})">${i}</button>`;
+        }
+
+        // Next button
+        const nextDisabled = agentState.currentPage === totalPages ? 'disabled' : '';
+        pageButtons += `<button class="page-btn ${nextDisabled}" onclick="changePage(${agentState.currentPage + 1})" ${nextDisabled ? 'disabled' : ''}>Next</button>`;
+
+        paginationHTML = `
+            <div class="pagination">
+                <div class="pagination-info">Showing ${startIndex + 1}-${Math.min(endIndex, totalDrivers)} of ${totalDrivers} drivers</div>
+                <div class="pagination-controls">
+                    ${pageButtons}
+                </div>
+            </div>
+        `;
+    }
+
+    return `
+        <div class="driver-table-container">
+            <div class="table-header">
+                <h2>Driver list analyses</h2>
+                <div class="search-bar">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M21 21L15 15M17 10C17 13.866 13.866 17 10 17C6.13401 17 3 13.866 3 10C3 6.13401 6.13401 3 10 3C13.866 3 17 6.13401 17 10Z" stroke="#6c757d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <input type="text" id="driver-search" placeholder="Search drivers..." value="${agentState.searchQuery}" oninput="handleSearch(event)">
+                </div>
+            </div>
+            <table class="driver-table">
+                <thead>
+                    <tr>
+                        <th>DRIVER</th>
+                        <th>EMAIL</th>
+                        <th>MOBILE ACCESS</th>
+                        <th>VEHICLE GROUPS</th>
+                        <th>STATUS</th>
+                        <th>ACTIONS</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${driverRows}
+                </tbody>
+            </table>
+            ${paginationHTML}
+        </div>
+    `;
+}
+
 // Generate inspection form after all questions answered
 function generateInspectionForm() {
     agentState.updateWorkflowProgress(2, 4, 'Generating inspection form');
@@ -867,8 +1315,6 @@ function approveForm() {
 
     // Simulate publishing process
     setTimeout(() => {
-        agentState.addMessage("Success! Your inspection form has been published and is now active. Drivers can start using it immediately.", false);
-
         // Show success state in canvas
         const successHTML = `
             <div class="success-container">
@@ -890,17 +1336,52 @@ function approveForm() {
                         <span>All Drivers</span>
                     </div>
                 </div>
+                <div class="canvas-secondary-buttons">
+                    <button class="secondary-btn" onclick="copyToClipboard()" title="Copy">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M8 4v12a2 2 0 002 2h8a2 2 0 002-2V7.242a2 2 0 00-.602-1.43L16.083 2.57A2 2 0 0014.685 2H10a2 2 0 00-2 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M16 18v2a2 2 0 01-2 2H6a2 2 0 01-2-2V9a2 2 0 012-2h2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
+                    <button class="secondary-btn" onclick="provideFeedback('positive')" title="Helpful">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M7 22V11M2 13v6a2 2 0 002 2h3m0 0h8a2 2 0 002-2v-7.5a2 2 0 00-2-2h-2.5m-3.5 0l3-5.5V3a1 1 0 011-1h1a1 1 0 011 1v3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
+                    <button class="secondary-btn" onclick="provideFeedback('negative')" title="Not helpful">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M7 2v11m-5-2v-6a2 2 0 012-2h3m0 0h8a2 2 0 012 2v7.5a2 2 0 01-2 2h-2.5m-3.5 0l3 5.5V21a1 1 0 01-1 1h-1a1 1 0 01-1-1v-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
+                </div>
             </div>
         `;
 
         agentState.updateOutputContent(successHTML);
 
-        // Return to activity selection after short delay
-        setTimeout(() => {
-            agentState.addMessage("What would you like to do next?", false);
-            returnToActivitySelection();
-        }, 2000);
+        // Add success message with feedback buttons and option to start new task
+        agentState.addMessage("Success! Your inspection form has been published and is now active. Drivers can start using it immediately.", false, [
+            { text: "Start a new task", onclick: "returnToActivitySelection()" }
+        ], true);  // Show feedback buttons
     }, 2500);
+}
+
+// Handle feedback from canvas buttons
+function provideFeedback(type) {
+    // Silently record feedback (in real app would send to backend)
+    console.log(`User feedback: ${type}`);
+    // No UI changes - feedback is passive
+}
+
+// Copy content to clipboard
+function copyToClipboard() {
+    // Get the preview content
+    const previewText = "Inspection form preview copied to clipboard";
+    navigator.clipboard.writeText(previewText).then(() => {
+        console.log('Content copied to clipboard');
+    }).catch(err => {
+        console.error('Failed to copy: ', err);
+    });
 }
 
 // Return to initial activity selection
@@ -919,161 +1400,368 @@ function editForm() {
     ]);
 }
 
-function analyzeCurrent() {
-    agentState.currentWorkflow = 'analysis';
-    showConversationInterface();
+// Activity 3: Driver management functions
 
-    agentState.addMessage("I'll analyze your current DVIR setup and provide recommendations. Let me scan your system...", false);
+// Helper function to update driver table
+function updateDriverTable() {
+    const tableHTML = renderDriverTable(agentState.drivers);
+    agentState.updateOutputContent(tableHTML);
+}
+
+// Search handler (Phase 6)
+function handleSearch(event) {
+    agentState.searchQuery = event.target.value;
+    agentState.currentPage = 1; // Reset to first page when searching
+    updateDriverTable();
+}
+
+// Pagination handler (Phase 6)
+function changePage(pageNumber) {
+    agentState.currentPage = pageNumber;
+    updateDriverTable();
+
+    // Scroll to top of table
+    const canvas = document.getElementById('ai-output-canvas');
+    if (canvas) {
+        canvas.scrollTop = 0;
+    }
+}
+
+// Fix all drivers with AI (Phase 4)
+function fixAllDriversWithAI() {
+    // Find all drivers that can be fixed with AI
+    const driversToFix = agentState.drivers.filter(d => d.status === 'ai-fix');
+    const fixCount = driversToFix.length;
+
+    // User clicks button
+    agentState.addMessage(`AI FIX ALL DRIVERS (${fixCount})`, true);
+
+    if (fixCount === 0) {
+        agentState.addMessage("No drivers need AI fixing at this time.", false);
+        return;
+    }
+
+    // Show progress message
+    setTimeout(() => {
+        agentState.addMessage(`Enabling mobile access for ${fixCount} drivers...`, false);
+
+        // Simulate AI fixing process
+        setTimeout(() => {
+            // Fix all drivers: enable mobile access and update status
+            driversToFix.forEach(driver => {
+                driver.mobileAccess = true;
+                driver.status = 'ready';
+            });
+
+            // Update the table with new data
+            updateDriverTable();
+
+            // Calculate new counts
+            const aiFixCount = agentState.drivers.filter(d => d.status === 'ai-fix').length;
+            const manualFixCount = agentState.drivers.filter(d => d.status === 'manual-fix').length;
+            const readyCount = agentState.drivers.filter(d => d.status === 'ready').length;
+
+            // Show success message
+            agentState.addMessage(`Done! I've enabled mobile access for ${fixCount} drivers. They're now ready to use the mobile app.`, false);
+
+            // Show updated summary
+            setTimeout(() => {
+                const statusCards = [
+                    { text: "Ready to go", badge: readyCount, badgeColor: 'green' }
+                ];
+
+                // Only show "Can be fixed with AI" if count > 0
+                if (aiFixCount > 0) {
+                    statusCards.push({ text: "Can be fixed with AI", badge: aiFixCount, badgeColor: 'orange' });
+                }
+
+                statusCards.push({ text: "Needs manual fix", badge: manualFixCount, badgeColor: 'orange' });
+
+                agentState.addMessage(`Great progress! You now have ${readyCount} drivers ready for mobile inspections.`, false, statusCards);
+
+                // Add feedback and next steps
+                setTimeout(() => {
+                    if (manualFixCount > 0) {
+                        agentState.addMessage(`You still have ${manualFixCount} drivers that need manual attention. Click EDIT DRIVERS to fix them, or start a new task when ready.`, false, [
+                            { text: "👍", onclick: "provideFeedback('positive', 'bulk-fix')" },
+                            { text: "👎", onclick: "provideFeedback('negative', 'bulk-fix')" },
+                            { text: "Start a new task", onclick: "returnToActivitySelection()" }
+                        ]);
+                    } else {
+                        agentState.addMessage("All drivers are now ready! You can start a new task when ready.", false, [
+                            { text: "👍", onclick: "provideFeedback('positive', 'all-complete')" },
+                            { text: "👎", onclick: "provideFeedback('negative', 'all-complete')" },
+                            { text: "Start a new task", onclick: "returnToActivitySelection()" }
+                        ]);
+                    }
+                }, 1000);
+            }, 500);
+
+        }, 2000); // 2 second delay for AI processing
+    }, 500);
+}
+
+// Quick fix individual driver
+function quickFixDriver(driverId) {
+    // Find the driver
+    const driver = agentState.drivers.find(d => d.id === driverId);
+    if (!driver) return;
+
+    // Add loading state to button (Phase 7 - Polish)
+    const button = event.target;
+    button.classList.add('loading');
+    button.disabled = true;
+
+    // Simulate processing delay
+    setTimeout(() => {
+        // Enable mobile access and update status
+        driver.mobileAccess = true;
+        driver.status = 'ready';
+
+        // Update the table
+        updateDriverTable();
+
+        // Show success message in chat
+        agentState.addMessage(`Enabled mobile access for ${driver.name}. They're now ready to use the mobile app!`, false);
+
+        // Remove loading state
+        button.classList.remove('loading');
+        button.disabled = false;
+
+        // Check if there are any more AI-fixable drivers
+        const aiFixCount = agentState.drivers.filter(d => d.status === 'ai-fix').length;
+        const manualFixCount = agentState.drivers.filter(d => d.status === 'manual-fix').length;
+        const readyCount = agentState.drivers.filter(d => d.status === 'ready').length;
+
+        // If no more AI-fixable drivers, show completion flow
+        if (aiFixCount === 0) {
+            setTimeout(() => {
+                const statusCards = [
+                    { text: "Ready to go", badge: readyCount, badgeColor: 'green' }
+                ];
+
+                // Only show "Can be fixed with AI" if count > 0
+                if (aiFixCount > 0) {
+                    statusCards.push({ text: "Can be fixed with AI", badge: aiFixCount, badgeColor: 'orange' });
+                }
+
+                statusCards.push({ text: "Needs manual fix", badge: manualFixCount, badgeColor: 'orange' });
+
+                agentState.addMessage(`Great progress! You now have ${readyCount} drivers ready for mobile inspections.`, false, statusCards);
+
+                // Add feedback and next steps
+                setTimeout(() => {
+                    if (manualFixCount > 0) {
+                        agentState.addMessage(`You still have ${manualFixCount} drivers that need manual attention. Click EDIT DRIVERS to fix them, or start a new task when ready.`, false, [
+                            { text: "👍", onclick: "provideFeedback('positive', 'quick-fix')" },
+                            { text: "👎", onclick: "provideFeedback('negative', 'quick-fix')" },
+                            { text: "Start a new task", onclick: "returnToActivitySelection()" }
+                        ]);
+                    } else {
+                        agentState.addMessage("All drivers are now ready! You can start a new task when ready.", false, [
+                            { text: "👍", onclick: "provideFeedback('positive', 'all-complete')" },
+                            { text: "👎", onclick: "provideFeedback('negative', 'all-complete')" },
+                            { text: "Start a new task", onclick: "returnToActivitySelection()" }
+                        ]);
+                    }
+                }, 500);
+            }, 500);
+        }
+    }, 800); // Small delay for better UX
+}
+
+// Edit driver (Phase 5)
+function editDriver(driverId) {
+    const driver = agentState.drivers.find(d => d.id === driverId);
+    if (!driver) return;
+
+    // Store the driver ID being edited
+    agentState.editingDriverId = driverId;
+
+    // Populate the edit form
+    document.getElementById('edit-driver-avatar').textContent = getInitials(driver.name);
+    document.getElementById('edit-driver-name').textContent = driver.name;
+    document.getElementById('edit-driver-id').textContent = `Driver ${driver.driverId}`;
+    document.getElementById('edit-email').value = driver.email || '';
+    document.getElementById('edit-mobile-access').checked = driver.mobileAccess;
+
+    // Populate vehicle groups
+    const groupsContainer = document.getElementById('edit-vehicle-groups');
+    groupsContainer.innerHTML = '';
+
+    const availableFleets = ['Fleet A', 'Fleet B', 'Fleet C'];
+    availableFleets.forEach(fleet => {
+        const checkbox = document.createElement('label');
+        checkbox.className = 'group-checkbox';
+        checkbox.innerHTML = `
+            <input type="checkbox" value="${fleet}" ${driver.vehicleGroups && driver.vehicleGroups.includes(fleet) ? 'checked' : ''}>
+            <span>${fleet}</span>
+        `;
+        groupsContainer.appendChild(checkbox);
+    });
+
+    // Show the modal
+    document.getElementById('edit-driver-modal').style.display = 'flex';
+}
+
+function closeEditModal() {
+    document.getElementById('edit-driver-modal').style.display = 'none';
+    agentState.editingDriverId = null;
+}
+
+function saveDriverEdits() {
+    const driverId = agentState.editingDriverId;
+    const driver = agentState.drivers.find(d => d.id === driverId);
+    if (!driver) return;
+
+    // Get form values
+    const email = document.getElementById('edit-email').value.trim();
+    const mobileAccess = document.getElementById('edit-mobile-access').checked;
+
+    // Get selected vehicle groups
+    const selectedGroups = [];
+    document.querySelectorAll('#edit-vehicle-groups input[type="checkbox"]:checked').forEach(checkbox => {
+        selectedGroups.push(checkbox.value);
+    });
+
+    // Validate email
+    let emailError = '';
+    if (!email) {
+        emailError = 'No email provided';
+    } else if (!isValidEmail(email)) {
+        emailError = 'Invalid email format';
+    }
+
+    // Update driver
+    driver.email = email;
+    driver.emailError = emailError;
+    driver.mobileAccess = mobileAccess;
+    driver.vehicleGroups = selectedGroups;
+    driver.groupsError = selectedGroups.length === 0 ? 'No groups assigned' : '';
+
+    // Recalculate status
+    if (!emailError && selectedGroups.length > 0 && mobileAccess) {
+        driver.status = 'ready';
+    } else if (!emailError && selectedGroups.length > 0 && !mobileAccess) {
+        driver.status = 'ai-fix';
+    } else {
+        driver.status = 'manual-fix';
+    }
+
+    // Update the table
+    updateDriverTable();
+
+    // Close modal
+    closeEditModal();
+
+    // Show success message in chat
+    agentState.addMessage(`Updated ${driver.name}. Changes have been saved.`, false);
+
+    // Check if all drivers are now ready
+    const aiFixCount = agentState.drivers.filter(d => d.status === 'ai-fix').length;
+    const manualFixCount = agentState.drivers.filter(d => d.status === 'manual-fix').length;
+    const readyCount = agentState.drivers.filter(d => d.status === 'ready').length;
+
+    // If all drivers are ready, show completion flow
+    if (aiFixCount === 0 && manualFixCount === 0 && readyCount > 0) {
+        setTimeout(() => {
+            const statusCards = [
+                { text: "Ready to go", badge: readyCount, badgeColor: 'green' }
+            ];
+
+            agentState.addMessage(`Excellent! All ${readyCount} drivers are now ready for mobile inspections.`, false, statusCards);
+
+            setTimeout(() => {
+                agentState.addMessage("You can now start training your drivers or proceed with other tasks.", false, [
+                    { text: "👍", onclick: "provideFeedback('positive', 'manual-edit-complete')" },
+                    { text: "👎", onclick: "provideFeedback('negative', 'manual-edit-complete')" },
+                    { text: "Start a new task", onclick: "returnToActivitySelection()" }
+                ]);
+            }, 500);
+        }, 500);
+    }
+}
+
+// Feedback handler (Phase 7)
+function provideFeedback(sentiment, context) {
+    // Record the feedback with context
+    console.log(`Feedback received: ${sentiment} for ${context}`);
+
+    // Show thank you message
+    agentState.addMessage(sentiment === 'positive' ? '👍' : '👎', true);
 
     setTimeout(() => {
-        const analysisContent = `
-            <div class="analysis-report">
-                <h2>📊 Current Setup Analysis</h2>
+        agentState.addMessage("Thank you for your feedback! It helps us improve the experience.", false);
+    }, 300);
+}
 
-                <div class="analysis-grid">
-                    <div class="analysis-card good">
-                        <div class="analysis-icon">✅</div>
-                        <h3>Working Well</h3>
-                        <ul>
-                            <li>4 drivers configured</li>
-                            <li>Basic form structure</li>
-                            <li>Mobile access enabled</li>
-                        </ul>
-                    </div>
+function isValidEmail(email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+}
 
-                    <div class="analysis-card warning">
-                        <div class="analysis-icon">⚠️</div>
-                        <h3>Needs Attention</h3>
-                        <ul>
-                            <li>3 drivers missing email</li>
-                            <li>No trailer inspections</li>
-                            <li>Limited compliance checks</li>
-                        </ul>
-                    </div>
+// Activity 3: Invite and train drivers
+function analyzeCurrent() {
+    // Reset conversation history for new activity
+    agentState.resetConversation();
 
-                    <div class="analysis-card info">
-                        <div class="analysis-icon">💡</div>
-                        <h3>Recommendations</h3>
-                        <ul>
-                            <li>Add photo requirements</li>
-                            <li>Enable automatic reminders</li>
-                            <li>Setup compliance reporting</li>
-                        </ul>
-                    </div>
-                </div>
+    // Initialize drivers in state from mock data
+    agentState.drivers = JSON.parse(JSON.stringify(mockDrivers)); // Deep copy
 
-                <div class="improvement-potential">
-                    <h3>🚀 Improvement Potential</h3>
-                    <div class="metric">
-                        <span>Compliance Score: <strong>78%</strong></span>
-                        <div class="progress-bar">
-                            <div class="progress" style="width: 78%"></div>
-                        </div>
-                    </div>
-                    <div class="metric">
-                        <span>Driver Readiness: <strong>65%</strong></span>
-                        <div class="progress-bar">
-                            <div class="progress" style="width: 65%"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+    // Reset pagination and search state (Phase 6)
+    agentState.currentPage = 1;
+    agentState.searchQuery = '';
 
-            <style>
-            .analysis-report {
-                font-family: var(--font-family);
-            }
+    agentState.currentWorkflow = 'driver-analysis';
+    agentState.updateWorkflowProgress(1, 4, 'Analyzing driver list');
 
-            .analysis-grid {
-                display: grid;
-                grid-template-columns: 1fr 1fr 1fr;
-                gap: 16px;
-                margin: 20px 0;
-            }
+    showConversationInterface();
 
-            .analysis-card {
-                padding: 20px;
-                border-radius: 8px;
-                border: 1px solid #e0e0e0;
-            }
+    // Step 1: Initial greeting
+    setTimeout(() => {
+        agentState.addMessage("Great! Let's get your drivers ready for mobile inspections.", false);
 
-            .analysis-card.good {
-                background: linear-gradient(135deg, #e8f5e8 0%, #f0f8f0 100%);
-                border-color: #28a745;
-            }
+        // Step 2: Show analyzing state
+        setTimeout(() => {
+            agentState.addMessage("Analyzing your current driver list...", false);
+            agentState.updateWorkflowProgress(2, 4, 'Processing drivers');
 
-            .analysis-card.warning {
-                background: linear-gradient(135deg, #fff8e6 0%, #fffaf0 100%);
-                border-color: #ffc107;
-            }
+            // Step 3: Calculate driver categories and show summary + table
+            setTimeout(() => {
+                // Calculate counts by category
+                const aiFixCount = agentState.drivers.filter(d => d.status === 'ai-fix').length;
+                const manualFixCount = agentState.drivers.filter(d => d.status === 'manual-fix').length;
+                const readyCount = agentState.drivers.filter(d => d.status === 'ready').length;
 
-            .analysis-card.info {
-                background: linear-gradient(135deg, #e6f3ff 0%, #f0f8ff 100%);
-                border-color: #007bff;
-            }
+                agentState.updateWorkflowProgress(3, 4, 'Analysis complete');
 
-            .analysis-icon {
-                font-size: 24px;
-                margin-bottom: 12px;
-            }
+                // Show driver table in canvas
+                const tableHTML = renderDriverTable(agentState.drivers);
+                agentState.showOutput(tableHTML);
 
-            .analysis-card h3 {
-                margin-bottom: 12px;
-                color: var(--vz-charcoal-gray);
-            }
+                // Show analysis summary with status cards
+                agentState.addMessage("I've analyzed your current driver list. Here's what needs attention before drivers can start submitting inspections:", false, [
+                    { text: "Ready to go", badge: readyCount, badgeColor: 'green' },
+                    { text: "Can be fixed with AI", badge: aiFixCount, badgeColor: 'orange' },
+                    { text: "Needs manual fix", badge: manualFixCount, badgeColor: 'orange' }
+                ]);
 
-            .analysis-card ul {
-                list-style: none;
-                padding: 0;
-            }
+                // Add guidance message with AI FIX ALL button
+                setTimeout(() => {
+                    if (aiFixCount > 0) {
+                        agentState.addMessage(`${aiFixCount} of your drivers can be fixed with my help. If you want to go ahead just click AI FIX ALL DRIVERS`, false, [
+                            { text: `AI FIX ALL DRIVERS (${aiFixCount})`, onclick: "fixAllDriversWithAI()" }
+                        ]);
+                    }
 
-            .analysis-card li {
-                padding: 4px 0;
-                color: var(--vz-gray);
-                font-size: 14px;
-            }
+                    setTimeout(() => {
+                        agentState.addMessage("For the others that need manual fix, go ahead and click EDIT DRIVERS. If you have questions or want to do something else, just let me know!", false);
+                    }, 500);
+                }, 1000);
 
-            .improvement-potential {
-                background: #f8f9ff;
-                padding: 20px;
-                border-radius: 8px;
-                margin-top: 20px;
-            }
-
-            .metric {
-                margin: 12px 0;
-            }
-
-            .progress-bar {
-                background: #e9ecef;
-                height: 8px;
-                border-radius: 4px;
-                margin-top: 8px;
-                overflow: hidden;
-            }
-
-            .progress {
-                background: linear-gradient(90deg, #007bff 0%, #0056b3 100%);
-                height: 100%;
-                transition: width 1s ease;
-            }
-
-            @media (max-width: 768px) {
-                .analysis-grid {
-                    grid-template-columns: 1fr;
-                    gap: 12px;
-                }
-            }
-            </style>
-        `;
-
-        agentState.showOutput(analysisContent);
-        agentState.addMessage("Analysis complete! I found several areas for improvement. Your compliance score is 78% and driver readiness is 65%. Would you like me to fix these issues automatically?", false, [
-            { text: "Yes, fix automatically", icon: "auto_fix_high", onclick: "autoFix()" },
-            { text: "Show me what to fix", icon: "list", onclick: "showFixList()" },
-            { text: "I'll handle it manually", icon: "person", onclick: "manualFix()" }
-        ]);
-    }, 2500);
+            }, 2500);
+        }, 1000);
+    }, 500);
 }
 
 function uploadTemplate() {
