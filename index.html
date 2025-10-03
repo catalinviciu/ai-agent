@@ -148,6 +148,22 @@
                 <!-- AI Agent Sidebar -->
                 <div class="ai-sidebar" id="ai-sidebar">
 
+                <!-- Chat Collapse Header (Mobile/Tablet) -->
+                <div class="chat-collapse-header" onclick="toggleChatCollapse()">
+                    <div class="chat-header-content">
+                        <svg class="chat-header-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z" fill="currentColor"/>
+                        </svg>
+                        <div class="chat-header-text">
+                            <div class="chat-header-title">Reveal Intelligence</div>
+                            <div class="chat-header-preview" id="chat-preview">Tap to view conversation</div>
+                        </div>
+                    </div>
+                    <button class="chat-toggle-btn">
+                        <span class="chat-toggle-icon">▼</span>
+                    </button>
+                </div>
+
                 <!-- Workflow Progress -->
                 <div class="workflow-progress" id="workflow-progress" style="display: none;">
                     <div class="progress-header">

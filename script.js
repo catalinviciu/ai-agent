@@ -79,9 +79,20 @@ class AgentState {
     }
 
     toggleExpand() {
-        this.isExpanded = !this.isExpanded;
-        this.updateUI();
-        this.announceToScreenReader(this.isExpanded ? 'AI Assistant expanded' : 'AI Assistant collapsed');
+        const isMobile = window.innerWidth <= 768;
+
+        // Mobile behavior: Toggle canvas visibility instead of full-screen
+        if (isMobile && this.outputVisible) {
+            this.isExpanded = !this.isExpanded;
+            this.updateUI();
+            const message = this.isExpanded ? 'Canvas shown' : 'Canvas hidden';
+            this.announceToScreenReader(message);
+        } else {
+            // Desktop/tablet: Normal expand behavior
+            this.isExpanded = !this.isExpanded;
+            this.updateUI();
+            this.announceToScreenReader(this.isExpanded ? 'AI Assistant expanded' : 'AI Assistant collapsed');
+        }
     }
 
     close() {
@@ -371,6 +382,135 @@ function closeAgent() {
 
 function deactivateAgent() {
     agentState.deactivate();
+}
+
+// Chat Collapse/Expand for Mobile/Tablet
+let chatCollapseTimer = null;
+
+function toggleChatCollapse() {
+    const sidebar = document.getElementById('ai-sidebar');
+    if (!sidebar) return;
+
+    const isCollapsed = sidebar.classList.contains('collapsed');
+
+    if (isCollapsed) {
+        // Expand
+        sidebar.classList.remove('collapsed');
+        sidebar.classList.remove('has-actions');
+    } else {
+        // Collapse
+        sidebar.classList.add('collapsed');
+        updateChatPreview();
+        updateCollapsedState();
+    }
+}
+
+function updateCollapsedState() {
+    const sidebar = document.getElementById('ai-sidebar');
+    if (!sidebar || !sidebar.classList.contains('collapsed')) return;
+
+    // Check if the last message has actions
+    const conversationScroll = document.getElementById('conversation-scroll');
+    if (!conversationScroll) return;
+
+    const lastMessage = conversationScroll.querySelector('.message:last-child');
+    if (lastMessage) {
+        const hasActions = lastMessage.querySelector('.message-actions') !== null;
+        if (hasActions) {
+            sidebar.classList.add('has-actions');
+        } else {
+            sidebar.classList.remove('has-actions');
+        }
+    }
+}
+
+function collapseChatWithDelay(delayMs = 2000) {
+    // Only auto-collapse on tablet/mobile when expanded view is active
+    const container = document.getElementById('ai-container');
+    if (!container || !container.classList.contains('expanded')) return;
+
+    // Check if we're on tablet or mobile
+    const isMobileOrTablet = window.innerWidth <= 1024;
+    if (!isMobileOrTablet) return;
+
+    // Don't collapse if there are user actions waiting
+    const hasUserActions = checkForUserActions();
+    if (hasUserActions) return;
+
+    // Clear any existing timer
+    if (chatCollapseTimer) {
+        clearTimeout(chatCollapseTimer);
+    }
+
+    // Set new timer
+    chatCollapseTimer = setTimeout(() => {
+        const sidebar = document.getElementById('ai-sidebar');
+        if (sidebar && !sidebar.classList.contains('collapsed')) {
+            // Double-check no actions appeared during the delay
+            if (!checkForUserActions()) {
+                sidebar.classList.add('collapsed');
+                updateChatPreview();
+                updateCollapsedState();
+            }
+        }
+    }, delayMs);
+}
+
+function checkForUserActions() {
+    // Check if action interface is visible with buttons
+    const actionInterface = document.getElementById('action-interface');
+    if (actionInterface && actionInterface.style.display !== 'none') {
+        const hasActions = actionInterface.querySelectorAll('.action-btn, .primary-action-btn, .secondary-action-btn').length > 0;
+        if (hasActions) return true;
+    }
+
+    // Check if conversation actions are visible with buttons
+    const conversationActions = document.getElementById('conversation-actions');
+    if (conversationActions && conversationActions.style.display !== 'none') {
+        const hasActions = conversationActions.querySelectorAll('.action-btn').length > 0;
+        if (hasActions) return true;
+    }
+
+    // Check for inline message actions in conversation history
+    const conversationScroll = document.getElementById('conversation-scroll');
+    if (conversationScroll) {
+        const hasInlineActions = conversationScroll.querySelectorAll('.message-actions .action-btn').length > 0;
+        if (hasInlineActions) return true;
+    }
+
+    return false;
+}
+
+function updateChatPreview() {
+    const previewElement = document.getElementById('chat-preview');
+    if (!previewElement) return;
+
+    // Get the last AI message from conversation history
+    const conversationScroll = document.getElementById('conversation-scroll');
+    if (!conversationScroll) {
+        previewElement.textContent = 'Tap to view conversation';
+        return;
+    }
+
+    const messages = conversationScroll.querySelectorAll('.message.ai-message');
+    if (messages.length === 0) {
+        previewElement.textContent = 'Tap to view conversation';
+        return;
+    }
+
+    // Get the last AI message text
+    const lastMessage = messages[messages.length - 1];
+    const messageContent = lastMessage.querySelector('.message-content');
+    if (messageContent) {
+        let text = messageContent.textContent.trim();
+        // Truncate to ~50 characters
+        if (text.length > 50) {
+            text = text.substring(0, 50) + '...';
+        }
+        previewElement.textContent = text;
+    } else {
+        previewElement.textContent = 'Tap to view conversation';
+    }
 }
 
 
@@ -1094,6 +1234,97 @@ function renderDriverTable(drivers) {
         `;
     }
 
+    // Generate mobile card layout
+    const driverCards = paginatedDrivers.map(driver => {
+        // Determine email display
+        let emailDisplay = driver.email || driver.emailError;
+        let emailClass = driver.emailError ? 'error' : '';
+
+        // Determine mobile access display
+        let mobileAccessText = '';
+        let mobileAccessClass = '';
+
+        if (driver.accountLocked) {
+            mobileAccessText = '✕ Account locked';
+            mobileAccessClass = 'disabled';
+        } else if (driver.mobileAccess) {
+            mobileAccessText = '✓ Enabled';
+            mobileAccessClass = 'enabled';
+        } else if (driver.status === 'ai-fix') {
+            mobileAccessText = '✓ Can enable';
+            mobileAccessClass = 'can-enable';
+        } else {
+            mobileAccessText = '✕ Disabled';
+            mobileAccessClass = 'disabled';
+        }
+
+        // Determine vehicle groups display
+        let groupsDisplay = driver.vehicleGroups && driver.vehicleGroups.length > 0
+            ? driver.vehicleGroups.join(', ')
+            : driver.groupsError || 'No groups assigned';
+        let groupsClass = driver.groupsError ? 'error' : '';
+
+        // Determine status badge
+        let statusBadge = '';
+        let statusIcon = '';
+        let statusClass = driver.status;
+        if (driver.status === 'ready') {
+            statusBadge = 'Ready';
+            statusIcon = '✓';
+        } else if (driver.status === 'ai-fix') {
+            statusBadge = 'AI can fix';
+            statusIcon = '📱';
+        } else {
+            statusBadge = 'Manual fix needed';
+            statusIcon = '⚠️';
+        }
+
+        // Determine action button
+        let actionButton = '';
+        if (driver.status === 'ai-fix') {
+            actionButton = '<button class="action-btn ai-fix" onclick="quickFixDriver(\'' + driver.id + '\')">AI Quick Fix</button>';
+        } else if (driver.status === 'manual-fix') {
+            actionButton = '<button class="action-btn edit" onclick="editDriver(\'' + driver.id + '\')">Edit Driver</button>';
+        } else {
+            actionButton = '<button class="action-btn edit" onclick="editDriver(\'' + driver.id + '\')">Edit</button>';
+        }
+
+        return `
+            <div class="driver-card">
+                <div class="driver-card-header">
+                    <div class="driver-card-avatar">${getInitials(driver.name)}</div>
+                    <div class="driver-card-info">
+                        <div class="driver-card-name">${driver.name}</div>
+                        <div class="driver-card-id">Driver ${driver.driverId}</div>
+                    </div>
+                </div>
+                <div class="driver-card-body">
+                    <div class="driver-card-field">
+                        <div class="driver-card-label">Email</div>
+                        <div class="driver-card-value ${emailClass}">${emailDisplay}</div>
+                    </div>
+                    <div class="driver-card-field">
+                        <div class="driver-card-label">Mobile Access</div>
+                        <div class="driver-card-value ${mobileAccessClass}">${mobileAccessText}</div>
+                    </div>
+                    <div class="driver-card-field">
+                        <div class="driver-card-label">Vehicle Groups</div>
+                        <div class="driver-card-value ${groupsClass}">${groupsDisplay}</div>
+                    </div>
+                    <div class="driver-card-field">
+                        <div class="driver-card-label">Status</div>
+                        <div class="driver-card-status ${statusClass}">
+                            <span>${statusIcon}</span> ${statusBadge}
+                        </div>
+                    </div>
+                </div>
+                <div class="driver-card-actions">
+                    ${actionButton}
+                </div>
+            </div>
+        `;
+    }).join('');
+
     return `
         <div class="driver-table-container">
             <div class="table-header">
@@ -1120,6 +1351,9 @@ function renderDriverTable(drivers) {
                     ${driverRows}
                 </tbody>
             </table>
+            <div class="driver-cards-mobile">
+                ${driverCards}
+            </div>
             ${paginationHTML}
         </div>
     `;
@@ -1368,9 +1602,16 @@ function approveForm() {
 
 // Handle feedback from canvas buttons
 function provideFeedback(type) {
-    // Silently record feedback (in real app would send to backend)
+    // Record feedback (in real app would send to backend)
     console.log(`User feedback: ${type}`);
-    // No UI changes - feedback is passive
+
+    // Show user's feedback as a message
+    agentState.addMessage(type === 'positive' ? '👍' : '👎', true);
+
+    // AI responds with thank you
+    setTimeout(() => {
+        agentState.addMessage("Thank you for your feedback! It helps us improve the experience.", false);
+    }, 300);
 }
 
 // Copy content to clipboard
@@ -1483,16 +1724,12 @@ function fixAllDriversWithAI() {
                 setTimeout(() => {
                     if (manualFixCount > 0) {
                         agentState.addMessage(`You still have ${manualFixCount} drivers that need manual attention. Click EDIT DRIVERS to fix them, or start a new task when ready.`, false, [
-                            { text: "👍", onclick: "provideFeedback('positive', 'bulk-fix')" },
-                            { text: "👎", onclick: "provideFeedback('negative', 'bulk-fix')" },
                             { text: "Start a new task", onclick: "returnToActivitySelection()" }
-                        ]);
+                        ], true);  // Show feedback buttons
                     } else {
                         agentState.addMessage("All drivers are now ready! You can start a new task when ready.", false, [
-                            { text: "👍", onclick: "provideFeedback('positive', 'all-complete')" },
-                            { text: "👎", onclick: "provideFeedback('negative', 'all-complete')" },
                             { text: "Start a new task", onclick: "returnToActivitySelection()" }
-                        ]);
+                        ], true);  // Show feedback buttons
                     }
                 }, 1000);
             }, 500);
@@ -1553,16 +1790,12 @@ function quickFixDriver(driverId) {
                 setTimeout(() => {
                     if (manualFixCount > 0) {
                         agentState.addMessage(`You still have ${manualFixCount} drivers that need manual attention. Click EDIT DRIVERS to fix them, or start a new task when ready.`, false, [
-                            { text: "👍", onclick: "provideFeedback('positive', 'quick-fix')" },
-                            { text: "👎", onclick: "provideFeedback('negative', 'quick-fix')" },
                             { text: "Start a new task", onclick: "returnToActivitySelection()" }
-                        ]);
+                        ], true);  // Show feedback buttons
                     } else {
                         agentState.addMessage("All drivers are now ready! You can start a new task when ready.", false, [
-                            { text: "👍", onclick: "provideFeedback('positive', 'all-complete')" },
-                            { text: "👎", onclick: "provideFeedback('negative', 'all-complete')" },
                             { text: "Start a new task", onclick: "returnToActivitySelection()" }
-                        ]);
+                        ], true);  // Show feedback buttons
                     }
                 }, 500);
             }, 500);
@@ -1673,26 +1906,11 @@ function saveDriverEdits() {
 
             setTimeout(() => {
                 agentState.addMessage("You can now start training your drivers or proceed with other tasks.", false, [
-                    { text: "👍", onclick: "provideFeedback('positive', 'manual-edit-complete')" },
-                    { text: "👎", onclick: "provideFeedback('negative', 'manual-edit-complete')" },
                     { text: "Start a new task", onclick: "returnToActivitySelection()" }
-                ]);
+                ], true);  // Show feedback buttons
             }, 500);
         }, 500);
     }
-}
-
-// Feedback handler (Phase 7)
-function provideFeedback(sentiment, context) {
-    // Record the feedback with context
-    console.log(`Feedback received: ${sentiment} for ${context}`);
-
-    // Show thank you message
-    agentState.addMessage(sentiment === 'positive' ? '👍' : '👎', true);
-
-    setTimeout(() => {
-        agentState.addMessage("Thank you for your feedback! It helps us improve the experience.", false);
-    }, 300);
 }
 
 function isValidEmail(email) {
