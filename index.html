@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DVIR Setup Assistant - AI Agent Presence</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Host Application Container -->
+    <div class="host-app">
+        <!-- Main Header (Host App) -->
+        <header class="main-header">
+            <div class="logo"><span class="verizon">verizon</span><span class="connect">connect</span></div>
+            <div class="reveal-pro"><span>Reveal</span><span class="pro">Pro</span></div>
+            <nav class="top-nav">
+                <a href="#"><i class="material-icons">map</i> Live Map</a>
+                <a href="#"><i class="material-icons">assessment</i> Reports</a>
+                <a href="#"><i class="material-icons">replay</i> Replay</a>
+                <a href="#"><i class="material-icons">videocam</i> Video</a>
+                <a href="#"><i class="material-icons">place</i> Places</a>
+                <a href="#"><i class="material-icons">warning</i> Alerts</a>
+                <a href="#"><i class="material-icons">dashboard</i> Dashboard</a>
+                <a href="#" class="active"><i class="material-icons">build</i> Maintenance</a>
+                <a href="#"><i class="material-icons">book</i> Logbook</a>
+            </nav>
+            <div class="header-right">
+                <a href="#"><i class="material-icons">help_outline</i> Help</a>
+                <button class="ai-trigger" id="ai-trigger" onclick="activateAgent()" aria-label="Setup with Reveal Intelligence" title="Setup with Reveal Intelligence">
+                    <svg class="sparkle-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z" fill="currentColor"/>
+                    </svg>
+                </button>
+                <a href="#"><i class="material-icons">notifications</i></a>
+                <div class="profile">LS</div>
+            </div>
+        </header>
+
+        <!-- Host App Layout -->
+        <div class="host-layout">
+            <!-- Host Sidebar -->
+            <div class="host-sidebar">
+                <div class="sidebar-section">
+                    <div class="sidebar-title">Maintenance</div>
+                    <a href="#" class="sidebar-item">Inspection history</a>
+                    <a href="#" class="sidebar-item">Inspection forms</a>
+                    <a href="#" class="sidebar-item">Reminders</a>
+                    <a href="#" class="sidebar-item">History</a>
+                    <a href="#" class="sidebar-item">Manage Service Plans</a>
+                    <a href="#" class="sidebar-item">Fuel Purchases</a>
+                </div>
+                <div class="sidebar-section">
+                    <div class="sidebar-title">Setup Assistant</div>
+                    <a href="#" class="sidebar-item active">DVIR Setup Assistant</a>
+                </div>
+            </div>
+
+            <!-- Main Content Area -->
+            <div class="host-content" id="host-content">
+                <div class="content-inner">
+                    <!-- Page Header -->
+                    <div class="page-header">
+                        <h1>Inspection history</h1>
+                        <p class="page-description">To learn more about inspections, visit our <a href="#" class="help-link">help centre</a>.</p>
+                    </div>
+
+                    <!-- AI Setup Banner -->
+                    <div class="ai-setup-banner">
+                        <div class="banner-content">
+                            <div class="banner-text">
+                                <h3>DVIR system not yet configured</h3>
+                                <p>Set up your vehicle inspection forms, configure drivers, and generate training materials in minutes with AI assistance.</p>
+                            </div>
+                            <button class="btn-setup-ai" onclick="activateAgent()">
+                                <svg class="sparkle-icon-large" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z" fill="currentColor"/>
+                                </svg>
+                                SETUP WITH REVEAL INTELLIGENCE
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Search and Filters -->
+                    <div class="search-filters">
+                        <div class="search-box">
+                            <i class="material-icons">search</i>
+                            <input type="text" placeholder="Enter vehicle or driver name">
+                        </div>
+                        <div class="filter-group">
+                            <div class="filter-item">
+                                <label>Inspection status</label>
+                                <select>
+                                    <option>None selected</option>
+                                </select>
+                            </div>
+                            <div class="filter-item">
+                                <label>Date range</label>
+                                <input type="text" placeholder="Start date - End date">
+                            </div>
+                            <button class="btn btn-primary">APPLY</button>
+                            <button class="btn btn-link">CLEAR</button>
+                        </div>
+                    </div>
+
+                    <!-- Empty State -->
+                    <div class="empty-state">
+                        <div class="empty-state-content">
+                            <h3>Inspections: 0</h3>
+                            <div class="empty-message">
+                                <p><strong>No inspections yet</strong></p>
+                                <p class="empty-hint">Ensure your drivers are set up to use the Reveal Driver Plus app to make vehicle inspections.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- AI Agent Container (Sidebar + Canvas) -->
+        <div class="ai-container" id="ai-container">
+            <!-- Shared Header -->
+            <div class="ai-container-header">
+                <div class="ai-header-left">
+                    <svg class="sparkle-icon-header" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z" fill="currentColor"/>
+                    </svg>
+                    <h3>Reveal Intelligence</h3>
+                </div>
+                <div class="ai-header-right">
+                    <button class="icon-btn" aria-label="Menu">
+                        <i class="material-icons">more_vert</i>
+                    </button>
+                    <button class="icon-btn" id="expand-btn" onclick="toggleExpand()" aria-label="Expand">
+                        <i class="material-icons">open_in_full</i>
+                    </button>
+                    <button class="icon-btn" onclick="closeAgent()" aria-label="Close">
+                        <i class="material-icons">close</i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Content Area (Sidebar + Canvas side by side) -->
+            <div class="ai-content-area">
+                <!-- AI Agent Sidebar -->
+                <div class="ai-sidebar" id="ai-sidebar">
+
+                <!-- Chat Collapse Header (Mobile/Tablet) -->
+                <div class="chat-collapse-header" onclick="toggleChatCollapse()">
+                    <div class="chat-header-content">
+                        <svg class="chat-header-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z" fill="currentColor"/>
+                        </svg>
+                        <div class="chat-header-text">
+                            <div class="chat-header-title">Reveal Intelligence</div>
+                            <div class="chat-header-preview" id="chat-preview">Tap to view conversation</div>
+                        </div>
+                    </div>
+                    <button class="chat-toggle-btn">
+                        <span class="chat-toggle-icon">▼</span>
+                    </button>
+                </div>
+
+                <!-- Workflow Progress -->
+                <div class="workflow-progress" id="workflow-progress" style="display: none;">
+                    <div class="progress-header">
+                        <span class="progress-title">Setup Progress</span>
+                        <span class="progress-percent">0%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progress-fill"></div>
+                    </div>
+                    <div class="current-step" id="current-step">Ready to start</div>
+                </div>
+
+                <!-- Action Interface -->
+                <div class="action-interface" id="action-interface">
+                    <!-- Actions will be dynamically generated here -->
+                </div>
+
+                <!-- Conversation History -->
+                <div class="conversation-history" id="conversation-history" style="display: none;">
+                    <div class="conversation-scroll" id="conversation-scroll">
+                        <!-- Messages will be added here -->
+                    </div>
+                </div>
+
+                <!-- Conversation Actions (for user responses) -->
+                <div class="conversation-actions" id="conversation-actions" style="display: none;">
+                    <!-- User response actions will be dynamically generated here -->
+                </div>
+
+                <!-- Text Input (Only shown when AI can't offer actions) -->
+                <div class="text-input-area" id="text-input-area" style="display: none;">
+                    <div class="input-container">
+                        <input type="text" id="text-input" placeholder="Please describe what you need..." />
+                        <button class="send-btn" onclick="sendMessage()">
+                            <i class="material-icons">send</i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+                <!-- AI Output Canvas -->
+                <div class="ai-output-canvas" id="ai-output-canvas">
+                    <div class="canvas-container">
+                        <div class="output-content" id="output-content">
+                            <!-- AI generated content will appear here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Edit Driver Modal -->
+    <div id="edit-driver-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="driver-info-modal">
+                    <div class="driver-avatar-modal" id="edit-driver-avatar">MS</div>
+                    <div>
+                        <h3 id="edit-driver-name">Driver Name</h3>
+                        <p id="edit-driver-id">Driver #ID</p>
+                    </div>
+                </div>
+                <button class="modal-close" onclick="closeEditModal()">
+                    <i class="material-icons">close</i>
+                </button>
+            </div>
+
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="edit-email">Email Address</label>
+                    <input type="email" id="edit-email" class="form-input" placeholder="driver@company.com">
+                </div>
+
+                <div class="form-group">
+                    <label class="toggle-label">
+                        <span>Mobile Access</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="edit-mobile-access">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </label>
+                </div>
+
+                <div class="form-group">
+                    <label>Vehicle Groups</label>
+                    <div id="edit-vehicle-groups" class="checkbox-group">
+                        <!-- Checkboxes will be dynamically added here -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="saveDriverEdits()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
